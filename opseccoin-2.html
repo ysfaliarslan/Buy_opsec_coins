@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPSEC — The Coin Nobody Can Trace</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0e0c;
+    --panel: #111613;
+    --panel-2: #161c18;
+    --line: #26302a;
+    --green: #3dff9a;
+    --green-dim: #1f7a52;
+    --amber: #ffb454;
+    --text: #dbe6df;
+    --muted: #6e8078;
+    --red: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(61,255,154,0.035) 1px, transparent 1px);
+    background-size: 3px 3px;
+    z-index: 1000;
+  }
+
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  a { color: inherit; }
+
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------- Nav ---------- */
+  nav {
+    border-bottom: 1px solid var(--line);
+    padding: 18px 0;
+  }
+  nav .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .logo .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: blink 2.4s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 28px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  nav ul a:hover { color: var(--text); }
+  @media (max-width: 640px) { nav ul { display: none; } }
+
+  /* ---------- Hero / terminal ---------- */
+  header.hero {
+    padding: 72px 0 56px;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    header.hero { grid-template-columns: 1fr; padding: 48px 0 40px; }
+  }
+
+  .kicker {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--green);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(32px, 4.4vw, 50px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    margin-bottom: 20px;
+  }
+  h1 span { color: var(--green); }
+
+  .lede {
+    color: var(--muted);
+    font-size: 16.5px;
+    max-width: 46ch;
+    margin-bottom: 30px;
+  }
+
+  .cta-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14.5px;
+    font-weight: 600;
+    padding: 13px 22px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--green);
+    color: #05130c;
+    box-shadow: 0 0 0 rgba(61,255,154,0);
+  }
+  .btn-primary:hover { box-shadow: 0 0 22px rgba(61,255,154,0.35); }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--text);
+  }
+  .btn-ghost:hover { border-color: var(--muted); }
+
+  .price-tick {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .price-tick .up { color: var(--green); }
+
+  /* terminal window */
+  .terminal {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,0.7);
+  }
+  .terminal .bar {
+    display: flex;
+    gap: 7px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .terminal .bar span {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #333;
+  }
+  .terminal .body {
+    padding: 18px 20px 22px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: #9fb3a8;
+    min-height: 230px;
+  }
+  .terminal .body .row { margin-bottom: 7px; white-space: pre-wrap; }
+  .terminal .prompt { color: var(--green); }
+  .cursor {
+    display: inline-block;
+    width: 7px; height: 14px;
+    background: var(--green);
+    vertical-align: middle;
+    animation: blink 1s steps(1) infinite;
+  }
+
+  /* ---------- Stats bar ---------- */
+  .stats {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 28px 0;
+  }
+  .stats .wrap {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 700px) {
+    .stats .wrap { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat-label {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 21px;
+    font-weight: 600;
+  }
+  .stat-value.green { color: var(--green); }
+  .stat-value.amber { color: var(--amber); }
+
+  /* ---------- Sections ---------- */
+  section { padding: 72px 0; }
+  .section-head { max-width: 60ch; margin-bottom: 40px; }
+  .section-head h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 27px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .section-head p { color: var(--muted); font-size: 15.5px; }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  @media (max-width: 760px) { .grid-3 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel);
+    padding: 26px 24px;
+  }
+  .card .icon {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--green);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .card h3 {
+    font-size: 16.5px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .card p { color: var(--muted); font-size: 14.5px; }
+
+  /* buy panel */
+  .buy-panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+  @media (max-width: 760px) { .buy-panel { grid-template-columns: 1fr; } }
+
+  .order-ticket .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .order-ticket .row:last-child { border-bottom: none; }
+  .order-ticket .label { color: var(--muted); }
+  .order-ticket .val { font-family: 'IBM Plex Mono', monospace; }
+
+  .amount-input {
+    display: flex;
+    align-items: center;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 18px 0;
+  }
+  .amount-input input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    width: 100%;
+  }
+  .amount-input span {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .usd-preview {
+    font-size: 13px;
+    color: var(--muted);
+    margin: -8px 0 18px;
+  }
+
+  .full-btn { width: 100%; text-align: center; }
+
+  .fine-print {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  .chart-box canvas { width: 100%; height: 180px; display: block; }
+  .chart-legend {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* testimonials */
+  .quotes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 700px) { .quotes { grid-template-columns: 1fr; } }
+  .quote {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px;
+  }
+  .quote p.text { font-size: 14.5px; margin-bottom: 14px; }
+  .quote .who {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 36px 0 60px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  footer .wrap {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .btn.is-loading {
+    opacity: 0.85;
+    cursor: wait;
+  }
+  .spinner {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 2px solid rgba(5,19,12,0.3);
+    border-top-color: #05130c;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: -1px;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="dot"></span>OPSEC<span style="color:var(--muted); font-weight:400;">/coin</span></div>
+    <ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#buy">Buy</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap" style="display:contents;">
+    <div>
+      <div class="kicker">// untraceable by design</div>
+      <h1>The coin so private,<br>even <span>you</span> won't know<br>if you bought it.</h1>
+      <p class="lede">OPSEC Coin is a privacy-first digital asset built for people who take financial confidentiality seriously. No KYC. No tracking. No compromises.</p>
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="scrollToBuy()">Buy OPSEC Coins</button>
+        <a href="#how" class="btn btn-ghost">More info</a>
+      </div>
+      <div class="price-tick" style="margin-top:22px;">Trading at $2.83 right now, <span class="up">up 79.4%</span> in the last 24 hours.</div>
+    </div>
+
+    <div class="terminal">
+      <div class="bar"><span></span><span></span><span></span></div>
+      <div class="body" id="termBody"></div>
+    </div>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="wrap">
+    <div>
+      <div class="stat-label">Circulating supply</div>
+      <div class="stat-value">1,000,000,000</div>
+    </div>
+    <div>
+      <div class="stat-label">Holders</div>
+      <div class="stat-value green">42,918</div>
+    </div>
+    <div>
+      <div class="stat-label">Audit status</div>
+      <div class="stat-value amber">Certified Q3 2026</div>
+    </div>
+    <div>
+      <div class="stat-label">Network</div>
+      <div class="stat-value">Layer-2 Mesh</div>
+    </div>
+  </div>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>How OPSEC Coin works</h2>
+      <p>A streamlined three-step process, engineered for privacy and speed.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="icon">First</div>
+        <h3>Fund your order</h3>
+        <p>Choose an amount and confirm your purchase through our secure checkout.</p>
+      </div>
+      <div class="card">
+        <div class="icon">Then</div>
+        <h3>Settlement happens off-chain</h3>
+        <p>Transactions route through a private relay, so no public ledger entry is created.</p>
+      </div>
+      <div class="card">
+        <div class="icon">Finally</div>
+        <h3>Your holdings stay private</h3>
+        <p>Your balance is never linked to your identity, wallet, or any public record.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="buy">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Buy OPSEC Coins</h2>
+      <p>Set an amount below. What happens next is between you and our secure tool.</p>
+    </div>
+
+    <div class="buy-panel">
+      <div>
+        <div class="order-ticket">
+          <div class="row"><span class="label">Order type</span><span class="val">Market</span></div>
+          <div class="row"><span class="label">Slippage tolerance</span><span class="val">0.50%</span></div>
+          <div class="row"><span class="label">Est. price impact</span><span class="val">&lt;0.01%</span></div>
+        </div>
+
+        <div class="amount-input">
+          <input type="number" id="amountInput" placeholder="0.00" value="20" min="0" oninput="updateUsdPreview()">
+          <span>OPSEC COINS</span>
+        </div>
+        <div class="usd-preview mono" id="usdPreview">≈ $0.00 USD</div>
+
+        <button class="btn btn-primary full-btn" onclick="handleBuyClick(this)">Buy OPSEC Coins</button>
+        <p class="fine-print">By clicking Buy, you agree to our Terms of Service and Risk Disclosure.</p>
+      </div>
+
+      <div class="chart-box">
+        <canvas id="priceChart"></canvas>
+        <div class="chart-legend">
+          <span>90D</span>
+          <span id="chartPrice" class="mono">$28.7249</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>What holders are saying</h2>
+     <!-- <p>Unverifiable, by design.</p> -->
+    </div>
+    <div class="quotes">
+      <div class="quote">
+        <p class="text">"I got my coins almost INSTANTLY!"</p>
+        <div class="who">— Anonymous</div>
+      </div>
+      <div class="quote">
+        <p class="text">"Zero regrets."</p>
+        <div class="who">— Anonymous</div>
+      </div>
+      <div class="quote">
+        <p class="text">"A reddit user who accepts OPSEC coins for payment asked me for 20 OPSEC coins. I finally found the place where I can buy them."</p>
+        <div class="who">— Redacted for their own protection</div>
+      </div>
+      <div class="quote">
+        <p class="text">"Finally, a coin that respects my privacy more than my own bank does."</p>
+        <div class="who">— Anonymous</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Digital assets carry risk. Nothing on this site is financial advice.</div>
+    <div>© 2026 OPSEC Coin. All rights reserved.</div>
+  </div>
+  <div class="wrap" style="margin-top: 14px;">
+    <div style="font-size: 11.5px; color: var(--muted); opacity: 0.7;">This site is a satirical parody for entertainment purposes only. No cryptocurrency is bought, sold, or transferred here.</div>
+  </div>
+</footer>
+
+<script>
+  function scrollToBuy() {
+    document.getElementById('buy').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function handleBuyClick(btn) {
+    if (btn.classList.contains('is-loading')) return;
+    if (!btn.dataset.originalLabel) {
+      btn.dataset.originalLabel = btn.innerHTML;
+    }
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Confirming transaction';
+    setTimeout(() => {
+      btn.innerHTML = '<span class="spinner"></span>Redirecting to secure checkout';
+    }, 900);
+    setTimeout(() => {
+      window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&autoplay=1';
+    }, 1800);
+    // Fallback: if the redirect doesn't take (e.g. the user comes right
+    // back), put the button back to normal on its own after a few seconds.
+    setTimeout(() => {
+      btn.classList.remove('is-loading');
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.originalLabel;
+    }, 3000);
+  }
+
+  // Reset any button stuck mid-loading if the page is restored from
+  // browser history (e.g. the user hits Back after being redirected)
+  function resetBuyButtons() {
+    document.querySelectorAll('.btn.is-loading').forEach((btn) => {
+      btn.classList.remove('is-loading');
+      btn.disabled = false;
+      if (btn.dataset.originalLabel) {
+        btn.innerHTML = btn.dataset.originalLabel;
+      }
+    });
+  }
+  window.addEventListener('pageshow', resetBuyButtons);
+
+  // Live USD conversion as the buyer adjusts the amount
+  const UNIT_PRICE = 2.83;
+  function updateUsdPreview() {
+    const amountEl = document.getElementById('amountInput');
+    const previewEl = document.getElementById('usdPreview');
+    const amount = parseFloat(amountEl.value) || 0;
+    const total = amount * UNIT_PRICE;
+    previewEl.textContent = '≈ $' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
+  }
+
+  // Terminal boot sequence
+  const lines = [
+    { p: '$', t: 'initiating opsec_protocol.sh' },
+    { p: '>', t: 'wiping metadata... done' },
+    { p: '>', t: 'rerouting through 7 VPNs... done' },
+    { p: '>', t: 'checking if anyone is watching... no' },
+    { p: '>', t: 'checking again... still no' },
+    { p: '>', t: 'generating wallet address' },
+    { p: '', t: '0x████████████████████' },
+    { p: '>', t: 'wallet balance: [ENCRYPTED]' },
+    { p: '$', t: 'status: fully anonymous' },
+  ];
+
+  const term = document.getElementById('termBody');
+  let li = 0;
+
+  function typeLine() {
+    if (li >= lines.length) {
+      const cur = document.createElement('div');
+      cur.className = 'row';
+      cur.innerHTML = '<span class="prompt">$</span> <span class="cursor"></span>';
+      term.appendChild(cur);
+      return;
+    }
+    const { p, t } = lines[li];
+    const row = document.createElement('div');
+    row.className = 'row';
+    const promptSpan = p ? `<span class="prompt">${p}</span> ` : '';
+    row.innerHTML = promptSpan + '<span class="typed"></span>';
+    term.appendChild(row);
+    const typedEl = row.querySelector('.typed');
+    let ci = 0;
+    const iv = setInterval(() => {
+      typedEl.textContent += t[ci];
+      ci++;
+      if (ci >= t.length) {
+        clearInterval(iv);
+        li++;
+        setTimeout(typeLine, 220);
+      }
+    }, 16);
+  }
+  typeLine();
+  updateUsdPreview();
+
+  // Fake price chart
+  const canvas = document.getElementById('priceChart');
+  function drawChart() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const w = rect.width, h = rect.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const points = [];
+    let v = 0.4;
+    for (let i = 0; i < 60; i++) {
+      v += (Math.random() - 0.48) * 0.15;
+      v = Math.max(0.05, Math.min(1, v));
+      points.push(v);
+    }
+    // final plunge to zero — the coin is worthless
+    for (let i = 0; i < 8; i++) points.push(Math.max(0, points[points.length-1] - 0.06));
+
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      const x = (i / (points.length - 1)) * w;
+      const y = h - p * (h - 20) - 10;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#3dff9a';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(61,255,154,0.18)');
+    grad.addColorStop(1, 'rgba(61,255,154,0)');
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    document.getElementById('chartPrice').textContent = '$28.7249';
+  }
+  drawChart();
+  window.addEventListener('resize', drawChart);
+</script>
+
+</body>
+</html>
