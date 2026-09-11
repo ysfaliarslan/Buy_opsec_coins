@@ -1,2 +1,2 @@
 # Buy_opsec_coins
-https://ysfaliarslan.github.io/Buy\_opsec\_coins/
+https://ysfaliarslan.github.io/Buy_opsec_coins/
